@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="1000" height="700">
+  <rect width="1000" height="420" fill="#cfd8dc"/>
+  <rect y="400" width="1000" height="300" fill="#5e7e8d"/>
+  <!-- headland and house (region 2) -->
+  <path d="M330 410 Q480 250 720 410 Z" fill="#7c8a5a"/>
+  <rect x="440" y="230" width="140" height="110" fill="#efe6d2"/>
+  <path d="M425 232 L510 165 L595 232 Z" fill="#9c3f2e"/>
+  <rect x="495" y="285" width="30" height="55" fill="#5b4a36"/>
+  <!-- sun and birds (region 3) -->
+  <circle cx="840" cy="130" r="60" fill="#e8b04a"/>
+  <path d="M750 200 q12 -14 24 0 q12 -14 24 0" fill="none" stroke="#2f3a40" stroke-width="5"/>
+  <path d="M880 215 q10 -12 20 0 q10 -12 20 0" fill="none" stroke="#2f3a40" stroke-width="5"/>
+  <!-- boat (region 1) -->
+  <path d="M60 480 L330 480 L290 560 L100 560 Z" fill="#6b3e2a"/>
+  <line x1="195" y1="260" x2="195" y2="480" stroke="#3b2a1e" stroke-width="8"/>
+  <path d="M200 270 L310 470 L200 470 Z" fill="#ece5d3"/>
+  <path d="M190 290 L90 470 L190 470 Z" fill="#d8cfb9"/>
+  <text x="500" y="680" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#eef2f4" text-anchor="middle" opacity=".7">PLACEHOLDER IMAGE · ARTWORK 2</text>
+</svg>

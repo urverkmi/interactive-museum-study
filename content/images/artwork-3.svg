@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <rect width="800" height="1000" fill="#2f3a33"/>
+  <!-- landscape strip (region 3) -->
+  <rect x="60" y="790" width="680" height="160" fill="#b9c4c0"/>
+  <path d="M60 900 Q200 820 360 880 Q520 830 740 880 L740 950 L60 950 Z" fill="#6f7d58"/>
+  <path d="M60 930 Q300 900 480 940 Q620 960 740 925 L740 950 L60 950 Z" fill="#8fa6b0"/>
+  <!-- robe -->
+  <path d="M190 760 L250 400 Q400 340 550 400 L610 760 Z" fill="#6a2f2f"/>
+  <!-- book and hands (region 2) -->
+  <rect x="318" y="555" width="164" height="100" fill="#e6dcc3"/>
+  <line x1="400" y1="555" x2="400" y2="655" stroke="#9b8d6f" stroke-width="4"/>
+  <ellipse cx="300" cy="610" rx="42" ry="30" fill="#d6a98a"/>
+  <ellipse cx="500" cy="610" rx="42" ry="30" fill="#d6a98a"/>
+  <!-- face (region 1) -->
+  <ellipse cx="400" cy="240" rx="92" ry="118" fill="#d6a98a"/>
+  <path d="M305 230 Q300 110 400 105 Q505 110 495 230 Q470 160 400 158 Q330 160 305 230 Z" fill="#2a1d14"/>
+  <circle cx="365" cy="240" r="8" fill="#2a1d14"/>
+  <circle cx="435" cy="240" r="8" fill="#2a1d14"/>
+  <path d="M375 300 Q400 314 425 300" fill="none" stroke="#8c4b3c" stroke-width="5"/>
+  <text x="400" y="985" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#dfe5e1" text-anchor="middle" opacity=".6">PLACEHOLDER IMAGE · ARTWORK 3</text>
+</svg>

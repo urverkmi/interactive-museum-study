@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" width="800" height="1000">
+  <rect width="800" height="1000" fill="#d8c9ab"/>
+  <rect y="650" width="800" height="350" fill="#8b7151"/>
+  <!-- window (region 3) -->
+  <rect x="400" y="80" width="320" height="270" fill="#5b4a36"/>
+  <rect x="414" y="94" width="292" height="242" fill="#a9c0cc"/>
+  <line x1="560" y1="94" x2="560" y2="336" stroke="#5b4a36" stroke-width="10"/>
+  <line x1="414" y1="215" x2="706" y2="215" stroke="#5b4a36" stroke-width="10"/>
+  <circle cx="480" cy="150" r="28" fill="#f1e3b5"/>
+  <!-- table and vase (region 2) -->
+  <rect x="460" y="760" width="260" height="22" fill="#4d3c2a"/>
+  <rect x="478" y="782" width="14" height="40" fill="#4d3c2a"/>
+  <rect x="688" y="782" width="14" height="40" fill="#4d3c2a"/>
+  <ellipse cx="590" cy="700" rx="58" ry="62" fill="#a4523a"/>
+  <rect x="566" y="612" width="48" height="40" fill="#a4523a"/>
+  <circle cx="560" cy="590" r="20" fill="#e4b54a"/>
+  <circle cx="600" cy="572" r="22" fill="#d9774f"/>
+  <circle cx="632" cy="598" r="18" fill="#e4b54a"/>
+  <!-- figure (region 1) -->
+  <path d="M150 960 L190 600 Q220 570 250 600 L320 960 Z" fill="#3e596c"/>
+  <ellipse cx="220" cy="530" rx="52" ry="62" fill="#c99a7a"/>
+  <path d="M166 520 Q170 450 222 450 Q276 452 276 520 Q250 480 220 486 Q190 482 166 520 Z" fill="#3b2a1e"/>
+  <text x="400" y="985" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#3b2f22" text-anchor="middle" opacity=".55">PLACEHOLDER IMAGE · ARTWORK 1</text>
+</svg>

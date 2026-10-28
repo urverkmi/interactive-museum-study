@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Study control panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Researchers only</p>
+      <h1>Study control panel</h1>
+    </div>
+    <div class="conn" id="conn"></div>
+  </header>
+
+  <section class="card" id="setup-card" hidden>
+    <h2>Connect</h2>
+    <p id="setup-msg"></p>
+    <form id="key-form" class="row">
+      <label for="key">Admin key <span class="muted">(ADMIN_KEY in Code.gs)</span></label>
+      <input id="key" type="password" autocomplete="current-password" required>
+      <button class="btn primary" type="submit">Connect</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Conditions</h2>
+    <p class="muted">Latin square from <code>config.js</code>. Use the preview links to check each combination; previews are never recorded.</p>
+    <div class="table-scroll"><table class="square" id="square"></table></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card" id="create-card">
+      <h2>Create a participant link</h2>
+      <form id="create-form">
+        <label for="label">Who is this link for?</label>
+        <input id="label" placeholder="Name, email, or panel ID" required>
+        <label for="seq">Sequence</label>
+        <select id="seq"></select>
+        <label for="note">Note <span class="muted">(optional)</span></label>
+        <input id="note" placeholder="e.g. pilot, recruited via course forum">
+        <button class="btn primary" type="submit" id="create-btn">Create link</button>
+      </form>
+      <div id="created" class="created" hidden></div>
+      <p class="muted small" id="open-link-row"></p>
+    </section>
+
+    <section class="card">
+      <h2>Balance</h2>
+      <div id="balance"><p class="muted">Connect to see how many people have each sequence.</p></div>
+      <p class="small"><a id="sheet-link" href="#" target="_blank" rel="noopener" hidden>Open the Google Sheet ↗</a></p>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Participants</h2>
+      <button class="btn" id="refresh" type="button">Refresh</button>
+    </div>
+    <div class="table-scroll"><table class="people" id="people"><tbody><tr><td class="muted">Not connected.</td></tr></tbody></table></div>
+  </section>
+</div>
+
+<script src="config.js"></script>
+<script src="content/content.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

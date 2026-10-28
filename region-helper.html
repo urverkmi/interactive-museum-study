@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Region helper</title>
+<link rel="stylesheet" href="css/admin.css">
+<style>
+  .stage { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+  @media (max-width: 900px) { .stage { grid-template-columns: 1fr; } }
+  .frame { position: relative; display: inline-block; line-height: 0; cursor: crosshair; user-select: none; max-width: 100%; }
+  .frame img { max-width: 100%; max-height: 75vh; display: block; -webkit-user-drag: none; }
+  .box { position: absolute; border: 2px solid #fff; outline: 2px solid #22407f; background: rgba(34,64,127,.18); pointer-events: none; }
+  .box b { position: absolute; left: 4px; top: 4px; background: #22407f; color: #fff; font: 600 13px/1 sans-serif; padding: 3px 6px; border-radius: 3px; }
+  .box.draft { outline-color: #b8501a; background: rgba(184,80,26,.2); }
+  pre { background: #1d1d1b; color: #f2f1ee; padding: 14px; border-radius: 6px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; margin: 8px 0; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tabs .btn[aria-pressed="true"] { background: #1d1d1b; color: #fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Researchers only</p>
+  <h1>Region helper</h1>
+  <p class="muted">Shows the regions currently in <code>content/content.js</code>. Drag on the image to draw a new rectangle, then copy its <code>shape</code> into the matching region in content.js.</p>
+  <div class="tabs" id="tabs"></div>
+  <div class="stage">
+    <div><div class="frame" id="frame"><img id="img" alt=""></div></div>
+    <div class="card">
+      <h2>New shape</h2>
+      <p class="muted small">Drag on the image.</p>
+      <pre id="out">—</pre>
+      <button class="btn small" id="copy" type="button">Copy</button>
+      <h2 style="margin-top:20px">Current regions</h2>
+      <pre id="current"></pre>
+    </div>
+  </div>
+</div>
+<script src="content/content.js"></script>
+<script>
+(function () {
+  const C = window.STUDY_CONTENT;
+  const frame = document.getElementById('frame'), img = document.getElementById('img');
+  let art = C.artworks[0], draft = null, start = null;
+  const r1 = n => Math.round(n * 10) / 10;
+
+  function tabs() {
+    document.getElementById('tabs').innerHTML = C.artworks.map((a, i) =>
+      '<button class="btn small" type="button" data-i="' + i + '" aria-pressed="' + (a === art) + '">' + a.id + '</button>').join('');
+  }
+  function draw() {
+    frame.querySelectorAll('.box').forEach(b => b.remove());
+    art.regions.forEach((rg, k) => addBox(rg.shape, String(k + 1), ''));
+    if (draft) addBox(draft, 'new', 'draft');
+    document.getElementById('current').textContent = art.regions.map(rg => rg.id + ': ' + JSON.stringify(rg.shape)).join('\n');
+  }
+  function addBox(s, label, cls) {
+    const b = document.createElement('div');
+    b.className = 'box ' + cls;
+    Object.assign(b.style, { left: s.x + '%', top: s.y + '%', width: s.w + '%', height: s.h + '%' });
+    b.innerHTML = '<b>' + label + '</b>';
+    frame.appendChild(b);
+  }
+  function load(a) { art = a; draft = null; img.src = a.image; tabs(); draw(); document.getElementById('out').textContent = '—'; }
+  function pct(e) {
+    const r = img.getBoundingClientRect();
+    return { x: Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)), y: Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100)) };
+  }
+  frame.addEventListener('pointerdown', e => { start = pct(e); frame.setPointerCapture(e.pointerId); });
+  frame.addEventListener('pointermove', e => {
+    if (!start) return;
+    const p = pct(e);
+    draft = { x: r1(Math.min(start.x, p.x)), y: r1(Math.min(start.y, p.y)), w: r1(Math.abs(p.x - start.x)), h: r1(Math.abs(p.y - start.y)) };
+    draw();
+  });
+  frame.addEventListener('pointerup', () => {
+    start = null;
+    if (draft) document.getElementById('out').textContent = 'shape: { x: ' + draft.x + ', y: ' + draft.y + ', w: ' + draft.w + ', h: ' + draft.h + ' }';
+  });
+  document.getElementById('tabs').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) load(C.artworks[+b.dataset.i]); });
+  document.getElementById('copy').addEventListener('click', () => navigator.clipboard && navigator.clipboard.writeText(document.getElementById('out').textContent));
+  load(art);
+})();
+</script>
+</body>
+</html>
