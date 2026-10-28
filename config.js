@@ -6,7 +6,7 @@ window.STUDY_CONFIG = {
   // Google Apps Script web-app URL (ends in /exec). See README.md, step 2.
   // Leave empty for PILOT MODE: nothing is sent anywhere, and the thank-you
   // page offers a download of the participant's data as a JSON file.
-  backendUrl: "",
+  backendUrl: "https://script.google.com/macros/s/AKfycbw55S1ymXRWiq5iwsk-5gt5awdGa5UKxsrdftAw9t5WpoUTsNosifc8_BMvKEIlhljT/exec",
 
   // Link shown on the start screen.
   consentFormUrl: "https://example.com/[CONSENT-FORM-LINK]",
