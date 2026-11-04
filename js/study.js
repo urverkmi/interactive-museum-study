@@ -24,15 +24,9 @@
 
   function freshState(code, sequence, source, order) {
     const trials = buildTrials(sequence, order);
-    const steps = ['start', 'instructions'];
-    const placement = recallPlacement();
-    trials.forEach((t, i) => {
-      steps.push('artwork:' + i);
-      if (placement === 'afterEach') { steps.push('recallH:' + i); steps.push('recallD:' + i); }
-    });
-    if (placement === 'end') {
-      trials.forEach((t, i) => { steps.push('recallH:' + i); steps.push('recallD:' + i); });
-    }
+    const steps = ['start', 'background', 'instructions'];
+    trials.forEach((t, i) => { steps.push('artwork:' + i); steps.push('quiz:' + i); });
+    steps.push('endquestions');
     steps.push('end');
     return {
       code, sequence, source,
@@ -44,11 +38,6 @@
       events: [],
       completed: false
     };
-  }
-
-  function recallPlacement() {
-    if (CFG.recallPlacement) return CFG.recallPlacement;
-    return CFG.recallAfterEach === false ? 'none' : 'afterEach';   // older config files
   }
 
   function shuffle(arr) {
@@ -172,6 +161,25 @@
   const SVG_LEFT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
   const SVG_RIGHT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
 
+  /* Radio option used by background / quiz / ending questions. */
+  function radioOpt(name, value, label) {
+    return '<label class="radio-opt"><input type="radio" name="' + esc(name) + '" value="' + esc(String(value)) + '"><span>' + esc(label) + '</span></label>';
+  }
+  /* 1–7 numbered scale with labels only at the two ends (e.g. "easy to understand"). */
+  function numberScale(name, lowLabel, highLabel) {
+    let opts = '';
+    for (let v = 1; v <= 7; v++) opts += '<label class="scale-opt"><input type="radio" name="' + esc(name) + '" value="' + v + '"><span>' + v + '</span></label>';
+    return '<div class="scale7">' + opts + '</div><div class="scale-labels"><span>' + esc(lowLabel) + '</span><span>' + esc(highLabel) + '</span></div>';
+  }
+  /* 7-point scale where every point has its own text label (e.g. agree/disagree). */
+  function likertScale(name, labels) {
+    return '<div class="likert">' + labels.map((l, idx) => radioOpt(name, idx + 1, l)).join('') + '</div>';
+  }
+  function checkedVal(name) {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : null;
+  }
+
   function randomCode(n) {
     const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let s = '';
@@ -231,10 +239,11 @@
     const step = S ? S.steps[S.step] : 'start';
     const [kind, idx] = step.split(':');
     if (kind === 'start') return showStart();
+    if (kind === 'background') return showBackground();
     if (kind === 'instructions') return showInstructions();
     if (kind === 'artwork') return showArtwork(Number(idx));
-    if (kind === 'recallH') return showRecall(Number(idx), 'holistic');
-    if (kind === 'recallD') return showRecall(Number(idx), 'detail');
+    if (kind === 'quiz') return showQuiz(Number(idx));
+    if (kind === 'endquestions') return showEndQuestions();
     if (kind === 'end') return showEnd();
   }
 
@@ -248,26 +257,30 @@
         '<p class="eyebrow">' + st.eyebrow + '</p>' +
         '<h1>' + st.title + '</h1>' +
         '<p class="lede">' + st.lede + '</p>' +
-        '<p><a class="consent-link" id="consent-link" href="' + esc(CFG.consentFormUrl) + '" target="_blank" rel="noopener">' + st.consentLinkText + ' ↗</a></p>' +
-        '<label class="check"><input type="checkbox" id="consent"><span>' + st.consentCheckbox + '</span></label>' +
+        '<p><a class="consent-link" id="info-link" href="participant-info/" target="_blank" rel="noopener">' + st.infoLinkText + ' ↗</a></p>' +
+        '<div class="consent-checks">' +
+          '<label class="check"><input type="checkbox" id="consent-age"><span>' + st.consentAge + '</span></label>' +
+          '<label class="check"><input type="checkbox" id="consent-info"><span>' + st.consentInfo + '</span></label>' +
+          '<label class="check"><input type="checkbox" id="consent-agree"><span>' + st.consentAgree + '</span></label>' +
+        '</div>' +
         '<div id="width-notice" class="notice" hidden>' + st.desktopOnly + '</div>' +
         '<div id="start-error" class="notice" hidden></div>' +
         '<p class="byline">' + st.researchers.map(esc).join('<br>') + '</p>' +
       '</div></div>' +
       '<footer class="screen-foot"><button class="btn primary" id="start" disabled>' + st.startButton + ' ' + ARROW_R + '</button></footer></section>'
     );
-    const box = document.getElementById('consent');
+    const boxes = [...document.querySelectorAll('.consent-checks input')];
     const btn = document.getElementById('start');
     const notice = document.getElementById('width-notice');
-    let consentClicked = false;
-    document.getElementById('consent-link').addEventListener('click', () => { consentClicked = true; });
+    let infoLinkClicked = false;
+    document.getElementById('info-link').addEventListener('click', () => { infoLinkClicked = true; });
 
     function update() {
       const narrow = window.innerWidth < CFG.minViewportWidth && MODE === 'live';
       notice.hidden = !narrow;
-      btn.disabled = !box.checked || narrow;
+      btn.disabled = !boxes.every(b => b.checked) || narrow;
     }
-    box.addEventListener('change', update);
+    boxes.forEach(b => b.addEventListener('change', update));
     window.addEventListener('resize', update);
     screenCleanup = () => window.removeEventListener('resize', update);
     update();
@@ -278,14 +291,19 @@
       try {
         const a = pendingAssignment || await assign();
         S = freshState(a.code, a.sequence, a.source, a.order);
-        S.session.consent_link_clicked = consentClicked;
+        S.session.consent_link_clicked = infoLinkClicked;
+        S.session.consent_ts = new Date().toISOString();
+        S.session.consent_version = CFG.consentVersion;
         S.session.start_ms_on_screen = Math.round(performance.now() - pageT0);
-        log('consent_given', { consent_link_clicked: consentClicked });
+        log('consent_given', { consent_link_clicked: infoLinkClicked });
         send({
           type: 'start',
           sequence: S.sequence,
           presentation: S.trials.map(t => t.artworkId + '=' + t.version).join(' > '),
-          started_at: S.startedAt,
+          start_ts: S.startedAt,
+          consent_ts: S.session.consent_ts,
+          consent_version: S.session.consent_version,
+          consent_link_clicked: infoLinkClicked,
           viewport: window.innerWidth + 'x' + window.innerHeight,
           screen: screen.width + 'x' + screen.height + '@' + (window.devicePixelRatio || 1),
           user_agent: navigator.userAgent,
@@ -317,6 +335,52 @@
     }
     const seq = Number(params.get('seq')) || (1 + Math.floor(Math.random() * Object.keys(CFG.latinSquare).length));
     return { code: (MODE === 'preview' ? 'PREVIEW-' : 'PILOT-') + randomCode(4), sequence: seq, order: parseOrder(params.get('order')), source: MODE };
+  }
+
+  /* ---------- Background questions ---------- */
+  function showBackground() {
+    const B = C.background;
+    render(
+      '<section class="screen"><div class="screen-body"><div class="quiz-inner">' +
+        '<h2 class="screen-title">' + B.title + '</h2>' +
+        '<fieldset class="qgroup"><legend>' + B.q1 + '</legend>' +
+          B.q1Options.map((o, idx) => radioOpt('bg-q1', idx, o)).join('') +
+        '</fieldset>' +
+        '<div class="collapsible" id="bg-q2-wrap">' +
+          '<fieldset class="qgroup" id="bg-q2-group"><legend>' + B.q2 + '</legend>' +
+            B.q2Options.map((o, idx) => radioOpt('bg-q2', idx, o)).join('') +
+          '</fieldset>' +
+        '</div>' +
+      '</div></div>' +
+      '<footer class="screen-foot"><button class="btn primary" id="next" disabled>' + B.next + ' ' + ARROW_R + '</button></footer></section>'
+    );
+    const q2Wrap = document.getElementById('bg-q2-wrap');
+    const q2Inputs = [...document.querySelectorAll('#bg-q2-group input')];
+    const btn = document.getElementById('next');
+
+    function update() {
+      const q1 = checkedVal('bg-q1');
+      const needsQ2 = q1 === '1';   // index 1 = "No"
+      q2Wrap.classList.toggle('open', needsQ2);
+      q2Inputs.forEach(i => {
+        i.disabled = !needsQ2;
+        if (!needsQ2) i.checked = false;
+      });
+      btn.disabled = !q1 || (needsQ2 && !checkedVal('bg-q2'));
+    }
+    app.addEventListener('change', update);
+    screenCleanup = () => app.removeEventListener('change', update);
+
+    btn.addEventListener('click', () => {
+      const q1 = Number(checkedVal('bg-q1'));
+      const q2 = checkedVal('bg-q2');
+      // BG1 (q1) index 1 = "No". If BG1 = Yes, BG2 is stored as "First language" (spec §2.1).
+      S.session.bg1_english_first = B.q1Options[q1];
+      S.session.bg2_reading_level = q1 === 1 ? (q2 != null ? B.q2Options[Number(q2)] : '') : 'First language';
+      log('background_done');
+      send({ type: 'background', bg1_english_first: S.session.bg1_english_first, bg2_reading_level: S.session.bg2_reading_level });
+      next();
+    });
   }
 
   /* ---------- Instructions ---------- */
@@ -524,29 +588,29 @@
       const hiddenMs = visHiddenNow();
       Object.assign(r, {
         page_ms: Math.round(pageMs),
-        visible_ms: Math.round(pageMs - hiddenMs),
+        dwell_ms: Math.round(pageMs - hiddenMs),
         hidden_ms: Math.round(hiddenMs),
         hidden_count: vis.hiddenCount,
         blur_count: vis.blurCount,
-        learn_more_clicks: m.learnClicks,
+        learn_more_clicked: m.learnClicks,
         learn_more_ms: Math.round(m.learnMs),
         viewport: window.innerWidth + 'x' + window.innerHeight,
         image_px: frame.style.width.replace('px', '') + 'x' + frame.style.height.replace('px', '')
       });
       if (v === 'C') {
         Object.assign(r, {
-          region_order: m.regionOrder.join('>'),
+          regions_order: m.regionOrder.join('>'),
           region_opens: m.regionOpens,
           region_reopens: m.regionReopens,
           time_to_first_region_ms: m.firstRegionMs,
-          all_regions_seen_ms: m.allSeenMs,
+          ms_to_all_regions: m.allSeenMs,
           region_dwell_ms: JSON.stringify(Object.fromEntries(Object.entries(m.dwell).map(([k, val]) => [k, Math.round(val)]))),
-          full_view_returns: m.fullViewReturns
+          returned_to_full_view: m.fullViewReturns
         });
       }
       log('artwork_done');
       // Send the artwork measures now (so they survive a drop-out);
-      // the recall answers update the same row later.
+      // the quiz answers update the same row later.
       sendTrial(i);
       next();
     });
@@ -556,47 +620,191 @@
     send(Object.assign({ type: 'trial', sequence: S.sequence, events: takeEvents() }, S.results[i]));
   }
 
-  /* ---------- Recall ---------- */
-  function showRecall(i, which) {
+  /* ---------- Quiz (shown right after each artwork) ---------- */
+  function showQuiz(i) {
     const trial = S.trials[i];
     const a = ARTWORKS[trial.artworkId];
-    const R = C.recall;
-    const prompt = which === 'holistic' ? R.holistic : R.detail;
+    const Q = C.quiz;
+    const questions = a.quizQuestions || [];
+    const isSecond = i === 1;   // the 2nd artwork this participant sees, whichever one that is
+
+    // Option order is shuffled per participant, "Not sure" always last (spec §2.2).
+    // The radio VALUE stays the option's original index, so correctness checks
+    // below don't need to change — only the display order does.
+    const shownOrder = questions.map(q => shuffle(q.options.map((_, oi) => oi)));
+
+    const qHtml = questions.map((q, k) =>
+      '<fieldset class="qgroup"><legend>' + (k + 1) + '. ' + q.stem + '</legend>' +
+        shownOrder[k].map(oi => radioOpt('q' + k, oi, q.options[oi])).join('') +
+        radioOpt('q' + k, 'ns', Q.notSure) +
+      '</fieldset>'
+    ).join('');
+
+    const ratingHtml =
+      '<fieldset class="qgroup rating-group"><legend>' + Q.ratingQuestion + '</legend>' +
+        numberScale('rating', Q.ratingLowLabel, Q.ratingHighLabel) +
+      '</fieldset>';
+
+    const acHtml = isSecond ?
+      '<fieldset class="qgroup"><legend>' + Q.attentionCheckText + '</legend>' +
+        likertScale('attn', Q.agreeScaleLabels) +
+      '</fieldset>' : '';
+
     render(
       '<section class="screen">' + posHeader(trial) +
-        '<div class="screen-body"><div class="recall-inner">' +
-          '<img class="recall-thumb" src="' + esc(a.image) + '" alt="' + esc(a.imageAlt || '') + '">' +
-          '<div><p class="recall-intro">' + R.intro + '</p>' +
-            '<label class="recall-q" for="answer">' + prompt + '</label>' +
-            '<textarea id="answer" spellcheck="false" autocomplete="off"></textarea>' +
-          '</div>' +
+        '<div class="screen-body"><div class="quiz-inner">' +
+          '<h2 class="screen-title">' + Q.title + '</h2>' +
+          qHtml + ratingHtml + acHtml +
         '</div></div>' +
-        '<footer class="screen-foot"><button class="btn primary" id="next" disabled>' + R.next + ' ' + ARROW_R + '</button></footer>' +
+        '<footer class="screen-foot"><button class="btn primary" id="next" disabled>' + Q.next + ' ' + ARROW_R + '</button></footer>' +
       '</section>'
     );
-    const ta = document.getElementById('answer');
+
     const btn = document.getElementById('next');
-    ta.focus();
+    const required = questions.map((_, k) => 'q' + k).concat(['rating']).concat(isSecond ? ['attn'] : []);
     let firstKeyMs = null;
-    ta.addEventListener('input', () => {
-      if (firstKeyMs == null) firstKeyMs = Math.round(performance.now() - pageT0);
-      btn.disabled = ta.value.trim().length === 0;
-    });
-    btn.addEventListener('click', () => {
-      const r = S.results[i];
+    const firstClick = {};   // per-field name: ms from page shown to its first click (rt_ms proxy)
+
+    function update(e) {
       const ms = Math.round(performance.now() - pageT0);
-      if (which === 'holistic') {
-        r.recall_holistic = ta.value.trim();
-        r.recall_holistic_ms = ms;
-        r.recall_holistic_first_key_ms = firstKeyMs;
-      } else {
-        r.recall_detail = ta.value.trim();
-        r.recall_detail_ms = ms;
-        r.recall_detail_first_key_ms = firstKeyMs;
+      if (firstKeyMs == null) firstKeyMs = ms;
+      const name = e && e.target && e.target.name;
+      if (name && firstClick[name] == null) firstClick[name] = ms;
+      btn.disabled = !required.every(n => checkedVal(n) != null);
+    }
+    app.addEventListener('change', update);
+    screenCleanup = () => app.removeEventListener('change', update);
+
+    btn.addEventListener('click', () => {
+      const quizAnswers = questions.map((q, k) => {
+        const val = checkedVal('q' + k);
+        const picked = val === 'ns' ? Q.notSure : q.options[Number(val)];
+        const correct = val !== 'ns' && Number(val) === q.correct_option;
+        return { item_id: q.item_id, type: q.type, picked, correct };
+      });
+      const r = S.results[i];
+      Object.assign(r, {
+        quiz_answers: JSON.stringify(quizAnswers),
+        quiz_correct_count: quizAnswers.filter(x => x.correct).length,
+        quiz_ms: Math.round(performance.now() - pageT0),
+        quiz_first_key_ms: firstKeyMs,
+        r1_rating: Number(checkedVal('rating'))
+      });
+      log('quiz_done');
+      sendTrial(i);
+
+      // One row per item (M1–M5 + R1) for the Responses table (spec §4.3).
+      const responseRows = questions.map((q, k) => {
+        const val = checkedVal('q' + k);
+        const optionsShown = shownOrder[k].map(oi => q.options[oi]).concat([Q.notSure]);
+        return {
+          item_id: q.item_id, artwork_id: trial.artworkId, version: trial.version, item_type: q.type,
+          options_shown: optionsShown.join('>'),
+          selected: val === 'ns' ? Q.notSure : q.options[Number(val)],
+          correct: val !== 'ns' && Number(val) === q.correct_option,
+          not_sure: val === 'ns',
+          rt_ms: firstClick['q' + k] != null ? firstClick['q' + k] : ''
+        };
+      });
+      responseRows.push({
+        item_id: 'R1', artwork_id: trial.artworkId, version: trial.version, item_type: 'rating',
+        options_shown: '', selected: checkedVal('rating'), correct: '', not_sure: false,
+        rt_ms: firstClick.rating != null ? firstClick.rating : ''
+      });
+      send({ type: 'responses', rows: responseRows });
+
+      if (isSecond) {
+        // AC1 is a participant-level exclusion field (spec §4.1), not per-trial.
+        const attnVal = Number(checkedVal('attn'));
+        S.session.attention_answer = attnVal;
+        S.session.attention_pass = attnVal === 3;   // "Somewhat disagree" is point 3 of 7
+        send({ type: 'attention', attention_answer: attnVal, attention_pass: S.session.attention_pass });
       }
-      r.recall_hidden_ms = (r.recall_hidden_ms || 0) + Math.round(visHiddenNow());
-      log('recall_' + which + '_done');
-      if (which === 'detail') sendTrial(i);
+      next();
+    });
+  }
+
+  /* ---------- Ending questions (after all three artworks) ---------- */
+  function showEndQuestions() {
+    const EQ = C.endQuestions;
+    const seenNames = S.trials.map(t => 'seen-' + t.artworkId);
+    const seenGrid = S.trials.map(t => {
+      const a = ARTWORKS[t.artworkId];
+      const name = 'seen-' + t.artworkId;
+      return '<div class="thumb-card">' +
+        '<img src="' + esc(a.image) + '" alt="' + esc(a.imageAlt || '') + '"><span class="thumb-title">' + esc(a.title) + '</span>' +
+        '<div class="mini-radios" role="radiogroup" aria-label="' + esc(EQ.seenBeforeTitle + ' — ' + a.title) + '">' +
+          EQ.seenBeforeOptions.map((o, idx) => radioOpt(name, idx, o)).join('') +
+        '</div>' +
+      '</div>';
+    }).join('');
+    const thumbs = S.trials.map(t => {
+      const a = ARTWORKS[t.artworkId];
+      return '<label class="thumb-opt"><input type="radio" name="helpful" value="' + esc(t.artworkId) + '">' +
+        '<img src="' + esc(a.image) + '" alt="' + esc(a.imageAlt || '') + '"><span>' + esc(a.title) + '</span></label>';
+    }).join('');
+
+    render(
+      '<section class="screen"><div class="screen-body"><div class="quiz-inner">' +
+        '<h2 class="screen-title">' + EQ.title + '</h2>' +
+        '<fieldset class="qgroup"><legend>' + EQ.seenBeforeTitle + '</legend>' +
+          '<div class="thumb-grid seen-grid">' + seenGrid + '</div>' +
+        '</fieldset>' +
+        '<fieldset class="qgroup"><legend>' + EQ.helpfulQ + '</legend>' +
+          '<div class="thumb-grid">' + thumbs + '</div>' +
+          '<label class="field-label" for="helpful-why">' + EQ.helpfulWhyLabel + '</label>' +
+          '<textarea id="helpful-why" class="small-area" spellcheck="false"></textarea>' +
+        '</fieldset>' +
+        '<fieldset class="qgroup"><legend>' + EQ.missingQ + '</legend>' +
+          '<textarea id="missing" class="small-area" placeholder="' + esc(EQ.missingPlaceholder) + '" spellcheck="false"></textarea>' +
+        '</fieldset>' +
+        '<fieldset class="qgroup"><legend>' + EQ.interviewQ + '</legend>' +
+          EQ.interviewOptions.map((o, idx) => radioOpt('interview', idx, o)).join('') +
+          '<div id="interview-email-wrap" hidden><label class="field-label" for="interview-email">' + EQ.interviewEmailLabel + '</label>' +
+            '<input type="email" id="interview-email" autocomplete="off">' +
+          '</div>' +
+        '</fieldset>' +
+      '</div></div>' +
+      '<footer class="screen-foot"><button class="btn primary" id="next" disabled>' + EQ.next + ' ' + ARROW_R + '</button></footer></section>'
+    );
+
+    const btn = document.getElementById('next');
+    const emailWrap = document.getElementById('interview-email-wrap');
+
+    function update() {
+      emailWrap.hidden = checkedVal('interview') !== '0';   // index 0 = "Yes"
+      btn.disabled = !seenNames.every(n => checkedVal(n) != null) || !checkedVal('helpful');
+    }
+    app.addEventListener('change', update);
+    screenCleanup = () => app.removeEventListener('change', update);
+
+    btn.addEventListener('click', () => {
+      // E1 (familiar) is per-artwork, so it's stored on each Trial row
+      // (spec §4.2), not bundled into the Session row.
+      S.trials.forEach(t => {
+        const familiar = EQ.seenBeforeOptions[Number(checkedVal('seen-' + t.artworkId))];
+        send({ type: 'trial', artwork_id: t.artworkId, familiar });
+      });
+      const helpfulId = checkedVal('helpful');
+      const helpfulReason = document.getElementById('helpful-why').value.trim();
+      const missingText = document.getElementById('missing').value.trim();
+      const wantsInterview = checkedVal('interview') === '0';
+      const email = document.getElementById('interview-email').value.trim();
+
+      S.session.e2_artwork_id = helpfulId;
+      S.session.e2_text = helpfulReason;
+      S.session.e3_text = missingText;
+      S.session.interview_optin = wantsInterview;
+
+      log('endquestions_done');
+      send({
+        type: 'endquestions',
+        e2_artwork_id: helpfulId,
+        e2_text: helpfulReason,
+        e3_text: missingText,
+        interview_optin: wantsInterview
+      });
+      if (email) send({ type: 'interview', email });
       next();
     });
   }
@@ -610,7 +818,8 @@
       send(Object.assign({
         type: 'complete',
         sequence: S.sequence,
-        completed_at: new Date().toISOString(),
+        end_ts: new Date().toISOString(),
+        completed: true,
         total_ms: totalMs,
         events: takeEvents()
       }, S.session));
@@ -620,7 +829,7 @@
     render(
       '<section class="screen"><div class="screen-body"><div class="end-inner">' +
         '<h1>' + E.title + '</h1>' +
-        '<p class="lede">' + E.body + '</p>' +
+        E.debriefParagraphs.map(p => '<p class="lede">' + p + '</p>').join('') +
         '<a class="btn primary" id="q-link" href="' + esc(qUrl) + '" target="_blank" rel="noopener">' + E.questionnaireButton + ' ' + ARROW_R + '</a>' +
         '<div class="end-section"><h3>' + E.codeLabel + '</h3><div class="code-box">' + esc(S.code) + '</div><p class="small">' + E.codeHelp + '</p></div>' +
         '<div class="end-section"><h3>' + E.contactLabel + '</h3><p>' + CFG.contactEmails.map(e => '<a href="mailto:' + esc(e) + '">' + esc(e) + '</a>').join('<br>') + '</p></div>' +
@@ -642,6 +851,47 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Artwork content (loaded from content/artworks/*.md at boot)       */
+  /* ------------------------------------------------------------------ */
+  /** Parses one content/artworks/*.md file into { original, regions }. */
+  function parseArtworkContent(md) {
+    const aMatch = md.match(/##\s*Version A[^\n]*\n+([\s\S]*?)(?=\n##\s|$)/);
+    const original = aMatch
+      ? aMatch[1].split(/\n{2,}/).map(p => p.trim()).filter(Boolean)
+      : [];
+
+    const bcMatch = md.match(/##\s*Version B\/C segments[^\n]*\n+([\s\S]*)/);
+    const regions = [];
+    if (bcMatch) {
+      const re = /###\s*(.+?)\s*\(([Rr]\d+)\)\s*\n+([\s\S]*?)(?=\n###\s|$)/g;
+      let m;
+      while ((m = re.exec(bcMatch[1]))) {
+        regions.push({
+          heading: m[1].trim(),
+          id: m[2].toLowerCase(),
+          text: m[3].split(/\n{2,}/).map(p => p.trim()).filter(Boolean).join(' ')
+        });
+      }
+    }
+    return { original, regions };
+  }
+
+  /** Fetches each artwork's content/artworks/*.md and merges the wording in. */
+  async function loadArtworkContent() {
+    await Promise.all(C.artworks.map(async a => {
+      if (!a.content) return;
+      const res = await fetch(a.content);
+      if (!res.ok) throw new Error('could not load ' + a.content);
+      const parsed = parseArtworkContent(await res.text());
+      a.original = parsed.original;
+      a.regions.forEach(rg => {
+        const found = parsed.regions.find(p => p.id === rg.id);
+        if (found) { rg.heading = found.heading; rg.text = found.text; }
+      });
+    }));
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Boot                                                               */
   /* ------------------------------------------------------------------ */
   function fatal(msg) {
@@ -650,6 +900,11 @@
   }
 
   async function boot() {
+    try {
+      await loadArtworkContent();
+    } catch (err) {
+      return fatal('The artwork texts could not be loaded (' + esc(err.message) + '). Please try again.');
+    }
     if (MODE === 'live') flush();
     const p = (params.get('p') || '').trim().toUpperCase();
 

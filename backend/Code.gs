@@ -4,13 +4,15 @@
  *
  * Tabs it creates in the Sheet:
  *   Assignments  who got which link and sequence (the ONLY tab with names — keep it private)
- *   Sessions     one row per participant: timing, screen size, completion
- *   Trials       one row per participant × artwork: version, times, Learn more, regions, recall answers
+ *   Sessions     one row per participant: timing, screen size, background and ending questions, completion
+ *   Trials       one row per participant × artwork: version, times, Learn more, regions, per-artwork quiz
+ *   Responses    one row per participant × item (M1–M5, R1) — spec §4.3
  *   Events       raw click-level log (one row per event)
+ *   Interviews   emails of participants who opted into a follow-up interview (kept separate, like Assignments)
  */
 
 // 1. Change this before deploying. The control panel asks for it.
-const ADMIN_KEY = 'CHANGE-ME-to-something-long';
+const ADMIN_KEY = 'museum-study';
 
 // 2. Keep identical to latinSquare in config.js.
 const LATIN_SQUARE = {
@@ -20,19 +22,30 @@ const LATIN_SQUARE = {
 };
 const ARTWORK_IDS = ['art1', 'art2', 'art3'];
 
+// Field names below follow docs/study-website-spec.md §4 (BG1/BG2, M1–M5,
+// R1, AC1, E1–E4). `code` stays the key in Assignments only — that tab is
+// this codebase's own link-management concept and isn't part of the spec's
+// logging tables, which key on `participant_id` instead (same value).
 const HEADERS = {
   Assignments: ['code', 'label', 'note', 'sequence', 'art1', 'art2', 'art3', 'source', 'created_at', 'started_at', 'completed_at', 'status', 'order'],
-  Sessions: ['code', 'sequence', 'presentation', 'mode', 'started_at', 'completed_at', 'total_ms', 'instructions_ms',
-             'consent_link_clicked', 'resumed_count', 'viewport', 'screen', 'language', 'user_agent', 'questionnaire_clicked'],
-  Trials: ['received_at', 'code', 'sequence', 'position', 'artwork_id', 'version',
-           'page_ms', 'visible_ms', 'hidden_ms', 'hidden_count', 'blur_count',
-           'learn_more_clicks', 'learn_more_ms',
-           'region_order', 'region_opens', 'region_reopens', 'time_to_first_region_ms', 'all_regions_seen_ms',
-           'region_dwell_ms', 'full_view_returns',
-           'recall_holistic', 'recall_holistic_ms', 'recall_holistic_first_key_ms',
-           'recall_detail', 'recall_detail_ms', 'recall_detail_first_key_ms', 'recall_hidden_ms',
+  Sessions: ['participant_id', 'sequence', 'presentation', 'mode', 'start_ts', 'end_ts', 'completed', 'total_ms', 'instructions_ms',
+             'consent_ts', 'consent_version', 'consent_link_clicked', 'resumed_count', 'viewport', 'screen', 'language', 'user_agent', 'questionnaire_clicked',
+             'bg1_english_first', 'bg2_reading_level',
+             'attention_answer', 'attention_pass',
+             'e2_artwork_id', 'e2_text', 'e3_text', 'interview_optin'],
+  Trials: ['received_at', 'participant_id', 'sequence', 'position', 'artwork_id', 'version',
+           'page_ms', 'dwell_ms', 'hidden_ms', 'hidden_count', 'blur_count',
+           'learn_more_clicked', 'learn_more_ms',
+           'regions_order', 'region_opens', 'region_reopens', 'time_to_first_region_ms', 'ms_to_all_regions',
+           'region_dwell_ms', 'returned_to_full_view',
+           'familiar',
+           'quiz_answers', 'quiz_correct_count', 'quiz_ms', 'quiz_first_key_ms',
+           'r1_rating',
            'viewport', 'image_px'],
-  Events: ['received_at', 'code', 'at', 'screen', 't_ms', 'type', 'details']
+  Responses: ['received_at', 'participant_id', 'item_id', 'artwork_id', 'version', 'item_type',
+              'options_shown', 'selected', 'correct', 'not_sure', 'rt_ms'],
+  Events: ['received_at', 'participant_id', 'at', 'screen', 't_ms', 'type', 'details'],
+  Interviews: ['received_at', 'participant_id', 'email']
 };
 
 /** Run once from the editor (select "setup" ▸ Run) to create the tabs. */
@@ -83,18 +96,28 @@ function doPost(e) {
       if (a.status !== 'completed') {
         updateRow_('Assignments', row, { started_at: a.started_at || now, status: 'in progress' });
       }
-      upsert_('Sessions', code, Object.assign({}, d, { code: code }));
+      upsert_('Sessions', code, Object.assign({}, d, { participant_id: code }));
     } else if (d.type === 'trial') {
-      // Sent once after the artwork page and again with the recall answers: update the same row.
-      const obj = Object.assign({}, d, { code: code, received_at: now });
+      // Sent once after the artwork page, again with the quiz answers, and again with E1 (familiar): updates the same row.
+      const obj = Object.assign({}, d, { participant_id: code, received_at: now });
       const tr = findTrialRow_(code, d.artwork_id);
       if (tr) updateRow_('Trials', tr, obj); else append_('Trials', obj);
     } else if (d.type === 'complete') {
-      updateRow_('Assignments', row, { completed_at: d.completed_at || now, status: 'completed' });
-      upsert_('Sessions', code, Object.assign({}, d, { code: code }));
+      updateRow_('Assignments', row, { completed_at: d.end_ts || now, status: 'completed' });
+      upsert_('Sessions', code, Object.assign({}, d, { participant_id: code }));
+    } else if (d.type === 'background' || d.type === 'endquestions' || d.type === 'attention') {
+      upsert_('Sessions', code, Object.assign({}, d, { participant_id: code }));
+    } else if (d.type === 'responses') {
+      // One row per item (M1–M5, R1). Always a fresh set of rows, never updated in place.
+      (d.rows || []).forEach(function (row) {
+        append_('Responses', Object.assign({}, row, { participant_id: code, received_at: now }));
+      });
+    } else if (d.type === 'interview') {
+      // Kept in its own tab, like Assignments — never joined to the Trials/Sessions data by email.
+      append_('Interviews', { received_at: now, participant_id: code, email: d.email || '' });
     } else if (d.type === 'event') {
       if ((d.events || []).some(function (ev) { return ev.type === 'questionnaire_click'; })) {
-        upsert_('Sessions', code, { code: code, questionnaire_clicked: true });
+        upsert_('Sessions', code, { participant_id: code, questionnaire_clicked: true });
       }
     }
 
@@ -270,7 +293,7 @@ function findTrialRow_(code, artworkId) {
   const sh = sheet_('Trials');
   const n = sh.getLastRow() - 1;
   if (n < 1 || !artworkId) return 0;
-  const ci = HEADERS.Trials.indexOf('code'), ai = HEADERS.Trials.indexOf('artwork_id');
+  const ci = HEADERS.Trials.indexOf('participant_id'), ai = HEADERS.Trials.indexOf('artwork_id');
   const vals = sh.getRange(2, 1, n, HEADERS.Trials.length).getValues();
   for (let i = 0; i < vals.length; i++) if (String(vals[i][ci]) === code && String(vals[i][ai]) === String(artworkId)) return i + 2;
   return 0;

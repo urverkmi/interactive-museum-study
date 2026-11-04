@@ -95,6 +95,7 @@ h1 {
 }
 .lede { font-size: 20px; margin: 0 0 32px; color: #33332f; }
 .consent-link { font-weight: 600; }
+.consent-checks { margin-top: 10px; }
 .check {
   display: flex;
   gap: 14px;
@@ -204,10 +205,11 @@ h2.screen-title { font: 600 32px/1.2 var(--serif); margin: 0 0 20px; }
   color: var(--ink);
   font: 600 17px/1 var(--sans);
   box-shadow: 0 0 0 3px var(--accent), 0 3px 10px rgba(0,0,0,.4);
-  transition: background .2s, color .2s;
+  transition: background .2s, color .2s, opacity .2s;
 }
 .region.seen .badge { background: var(--accent); color: #fff; box-shadow: 0 0 0 3px #fff, 0 3px 10px rgba(0,0,0,.4); }
-.region.active .badge { background: #fff; color: var(--accent); box-shadow: 0 0 0 4px var(--accent), 0 0 0 7px #fff, 0 3px 10px rgba(0,0,0,.4); }
+/* Hide the open region's own number — it sits inside the highlighted spot and covers the artwork there. */
+.region.active .badge { opacity: 0; pointer-events: none; }
 .frame-idle .region:not(.seen) .badge { animation: pulse 2.2s ease-in-out infinite; }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 3px var(--accent), 0 0 0 3px rgba(255,255,255,.0), 0 3px 10px rgba(0,0,0,.4); }
@@ -269,19 +271,113 @@ h2.screen-title { font: 600 32px/1.2 var(--serif); margin: 0 0 20px; }
 .dot.seen { background: var(--accent); }
 .dot.active { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ---------- Recall ---------- */
-.recall-inner {
-  max-width: 760px;
-  width: 100%;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 36px;
-  align-items: start;
+/* ---------- Background / quiz / ending questions ---------- */
+.quiz-inner { max-width: 720px; width: 100%; margin: 0 auto; padding: 8px 0 24px; }
+.qgroup {
+  border: 0;
+  padding: 0;
+  margin: 0 0 30px;
 }
-.recall-thumb { width: 150px; height: auto; display: block; box-shadow: 0 6px 18px rgba(0,0,0,.14); }
-.recall-intro { color: var(--muted); margin: 0 0 18px; font-size: 16px; }
-.recall-q { display: block; font: 600 21px/1.4 var(--serif); margin: 0 0 14px; }
+.qgroup legend {
+  font: 600 20px/1.4 var(--serif);
+  padding: 0 0 12px;
+  color: var(--ink);
+}
+.radio-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 9px 0;
+  cursor: pointer;
+  font-size: 17px;
+}
+.radio-opt input { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--accent); flex: none; }
+.field-label { display: block; margin: 4px 0 8px; color: var(--muted); font-size: 15px; }
+
+/* Animated reveal (e.g. the 2nd background question) */
+.collapsible {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height .4s ease, opacity .3s ease, transform .3s ease;
+}
+.collapsible.open { max-height: 340px; opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .collapsible { transition: none; }
+}
+textarea.small-area { min-height: 90px; }
+
+/* 1–7 numbered scale (e.g. ease of understanding) */
+.scale7 { display: flex; gap: 10px; flex-wrap: wrap; }
+.scale-opt {
+  display: grid;
+  place-items: center;
+  width: 46px; height: 46px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  cursor: pointer;
+  font: 600 17px/1 var(--sans);
+}
+.scale-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.scale-opt:has(input:checked) { background: var(--ink); color: #fff; }
+.scale-opt:hover { background: var(--accent-soft); }
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  max-width: 420px;
+}
+
+/* 7-point verbal scale (e.g. agree/disagree) */
+.likert { display: flex; flex-direction: column; }
+
+/* Thumbnail picker (ending question: which text helped the most) */
+.thumb-grid { display: flex; gap: 20px; flex-wrap: wrap; margin: 4px 0 18px; }
+.thumb-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 140px;
+  padding: 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+}
+.thumb-opt img { width: 100%; height: 100px; object-fit: contain; }
+.thumb-opt input { accent-color: var(--accent); }
+.thumb-opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+
+/* Per-artwork "seen before" cards — same grid, each with its own mini radio group */
+.thumb-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 160px;
+  padding: 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  text-align: center;
+  font-size: 14px;
+}
+.thumb-card img { width: 100%; height: 100px; object-fit: contain; }
+.thumb-title { font-size: 14px; }
+.mini-radios {
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.mini-radios .radio-opt { padding: 4px 0; gap: 8px; font-size: 14px; justify-content: center; }
+.mini-radios .radio-opt input { width: 16px; height: 16px; }
+
 textarea {
   width: 100%;
   min-height: 190px;
@@ -343,6 +439,58 @@ dialog#learn-more::backdrop { background: rgba(20,20,18,.45); }
 /* ---------- Narrow windows (study is desktop-only, but don't break) ---------- */
 @media (max-width: 860px) {
   .art-layout { grid-template-columns: 1fr; }
-  .recall-inner { grid-template-columns: 1fr; }
   .start-inner, .instr-inner, .end-inner { margin-left: 0; }
 }
+
+/* ---------- Site footer ---------- */
+/* On the study app (index.html): fixed in a corner, out of the way of the
+   mode banner (top-right) and the Next/Start button (bottom-right). */
+.site-footer {
+  position: fixed;
+  left: 12px; bottom: 10px;
+  z-index: 40;
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+}
+.site-footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+.site-footer a:hover { color: var(--ink); }
+/* On participant-info/ and sources/: a normal footer at the end of the page. */
+.site-footer.static {
+  position: static;
+  margin: 48px auto 0;
+  max-width: 760px;
+  padding: 20px clamp(20px, 4vw, 56px) 40px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- Content pages (participant information, sources) ---------- */
+body.content-body { background: var(--wall); }
+.content-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px clamp(20px, 4vw, 56px) 0;
+}
+#doc h1 { font: 600 clamp(30px, 3.6vw, 42px)/1.15 var(--serif); margin: 0 0 24px; }
+#doc h2 { font: 600 24px/1.3 var(--serif); margin: 36px 0 14px; }
+#doc h3 { font: 600 19px/1.3 var(--sans); margin: 24px 0 8px; }
+#doc p { margin: 0 0 16px; }
+#doc ul, #doc ol { margin: 0 0 16px; padding-left: 1.4em; }
+#doc li { margin: 0 0 6px; }
+#doc li input[type="checkbox"] { margin-right: 8px; accent-color: var(--accent); }
+#doc table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 24px;
+  font-size: 15px;
+}
+#doc th, #doc td {
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+#doc th { background: var(--paper); font-weight: 600; }
+#doc strong { font-weight: 600; }
+#doc a { word-break: break-word; }
+#doc hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }

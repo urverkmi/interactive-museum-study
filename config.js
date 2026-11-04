@@ -8,14 +8,21 @@ window.STUDY_CONFIG = {
   // page offers a download of the participant's data as a JSON file.
   backendUrl: "https://script.google.com/macros/s/AKfycbw55S1ymXRWiq5iwsk-5gt5awdGa5UKxsrdftAw9t5WpoUTsNosifc8_BMvKEIlhljT/exec",
 
-  // Link shown on the start screen.
-  consentFormUrl: "https://example.com/[CONSENT-FORM-LINK]",
+  // Version of the participant-information wording (content/participant-info.md)
+  // that the consent checkboxes refer to. Saved with every consent as
+  // consent_version, so you know which wording each person agreed to.
+  // Bump this (e.g. to a new date) whenever participant-info.md changes.
+  consentVersion: "2026-11-05",
 
   // Link on the thank-you screen. "{code}" is replaced with the participant
   // code, so questionnaire answers can be joined with the logged data.
   // Google Forms: use "Get pre-filled link", type CODE in a short-answer
   // question, and replace CODE in the URL with {code}.
-  questionnaireUrl: "https://example.com/[QUESTIONNAIRE-LINK]?code={code}",
+  // TODO: not set yet — "#" is a safe no-op so the button never leaks to a
+  // fake external domain. Replace before piloting, or remove the button
+  // from showEnd() in js/study.js if you decide you don't need it (the
+  // background/quiz/ending questions are already all collected in-app).
+  questionnaireUrl: "#TODO-add-questionnaire-url",
 
   contactEmails: ["michang@kth.se", "yuxz@kth.se"],
 
@@ -37,15 +44,9 @@ window.STUDY_CONFIG = {
   //  "byArtwork" — always artwork 1 → 2 → 3.
   presentationOrder: "random",
 
-  // When the two recall questions are asked:
-  //  "end"       — after all three artworks, one artwork at a time, in the
-  //                order they were seen (thumbnail shown as a cue).
-  //  "afterEach" — right after each artwork.
-  //  "none"      — no recall pages (e.g. if recall moves to the questionnaire).
-  recallPlacement: "end",
-
-  // Version C: the Next button unlocks only after all three parts are opened.
-  requireAllRegions: true,
+  // Version C: if true, the Next button stays locked (with a hint) until all
+  // three parts are opened. Off by default — participants can move on early.
+  requireAllRegions: false,
 
   // Below this window width the start screen asks for a computer.
   minViewportWidth: 1000,
