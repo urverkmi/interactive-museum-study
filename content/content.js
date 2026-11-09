@@ -31,7 +31,7 @@ window.STUDY_CONTENT = {
     // Neutral participant-facing title: the plan only discloses the
     // comparison between versions in the debriefing.
     title: "Reading museum labels online",
-    lede: "An online study about how people take in information about artworks. It takes about 12–15 minutes. One of the artworks shows a historical tavern and brothel scene — see the participant information for details.",
+    lede: "Thank you for taking part in our online study about how people take in information about artworks! It takes about 12–15 minutes.",
     infoLinkText: "Read the full participant information",
     consentAge: "I am 18 or older.",
     consentInfo: "I have read the participant information and know I can stop at any time.",
