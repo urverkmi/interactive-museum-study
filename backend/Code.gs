@@ -29,7 +29,7 @@ const ARTWORK_IDS = ['art1', 'art2', 'art3'];
 const HEADERS = {
   Assignments: ['code', 'label', 'note', 'sequence', 'art1', 'art2', 'art3', 'source', 'created_at', 'started_at', 'completed_at', 'status', 'order'],
   Sessions: ['participant_id', 'sequence', 'presentation', 'mode', 'start_ts', 'end_ts', 'completed', 'total_ms', 'instructions_ms',
-             'consent_ts', 'consent_version', 'consent_link_clicked', 'resumed_count', 'viewport', 'screen', 'language', 'user_agent', 'questionnaire_clicked',
+             'consent_ts', 'consent_version', 'consent_link_clicked', 'resumed_count', 'viewport', 'screen', 'language', 'user_agent',
              'bg1_english_first', 'bg2_reading_level',
              'attention_answer', 'attention_pass',
              'e2_artwork_id', 'e2_text', 'e3_text', 'interview_optin'],
@@ -115,10 +115,6 @@ function doPost(e) {
     } else if (d.type === 'interview') {
       // Kept in its own tab, like Assignments — never joined to the Trials/Sessions data by email.
       append_('Interviews', { received_at: now, participant_id: code, email: d.email || '' });
-    } else if (d.type === 'event') {
-      if ((d.events || []).some(function (ev) { return ev.type === 'questionnaire_click'; })) {
-        upsert_('Sessions', code, { participant_id: code, questionnaire_clicked: true });
-      }
     }
 
     if (d.events && d.events.length) {

@@ -118,7 +118,6 @@ window.STUDY_CONTENT = {
       "Which artwork had which label varied between participants. We compare how much people remember from each.",
       "The paintings and their original texts come from the KMSKA, Antwerp; the Carmen Thyssen Collection, on deposit at the Museo Nacional Thyssen-Bornemisza, Madrid; and Prague City Gallery. Full credits are on the <a href=\"sources/\" target=\"_blank\" rel=\"noopener\">Sources page</a>."
     ],
-    questionnaireButton: "Go to the questionnaire",
     codeLabel: "Your participant code",
     codeHelp: "Keep this code if you later want to withdraw your answers.",
     contactLabel: "Questions or withdrawal"
@@ -214,8 +213,8 @@ window.STUDY_CONTENT = {
         },
         {
           item_id: "M5", type: "detail",
-          stem: "According to the text, what is the old man at the back doing?",
-          options: ["Resting by the fire", "Serving drinks", "Sleeping at the table", "Leaving through the door"],
+          stem: "According to the text, how is the maid on the left different from the people at the table?",
+          options: ["She is busy working, while they are drunk", "She is drunk, while they are busy working", "She is drunk, and they are drunk too", "She is busy working, and they are working too"],
           correct_option: 0
         }
       ]
@@ -269,19 +268,19 @@ window.STUDY_CONTENT = {
           options: [
             "He drew them separately, then added them to a landscape probably painted in his studio",
             "He painted them directly from life in Martinique",
-            "He copied them from Cézanne's paintings",
+            "He copied them from photographs",
             "He painted the landscape after the figures were sold"
           ],
           correct_option: 0
         },
         {
           item_id: "M2", type: "relation",
-          stem: "According to the text, what is the path in the painting leading to?",
+          stem: "According to the text, which is true about the people in this painting?",
           options: [
-            "The people carrying fruit, who are the main subject",
-            "The masses of vegetation",
-            "A hidden building",
-            "The animals by the road"
+            "They take up a small part of it, and the fruit carriers are the main subject",
+            "They take up a small part of it, and the landscape is the main subject",
+            "They fill most of it, and the fruit carriers are the main subject",
+            "They fill most of it, and the animals are the main subject"
           ],
           correct_option: 0
         },
@@ -378,8 +377,8 @@ window.STUDY_CONTENT = {
         },
         {
           item_id: "M4", type: "detail",
-          stem: "According to the text, what do the sun's rays through the fog symbolise?",
-          options: ["Dawn and freedom", "Mourning and loss", "War and danger", "Winter and cold"],
+          stem: "According to the text, what does the sunlight stand for, and how do the people in the square react?",
+          options: ["Freedom; each person takes it in their own way", "Freedom; everyone celebrates together", "The cold winter; each person takes it in their own way", "The cold winter; everyone waits quietly"],
           correct_option: 0
         },
         {

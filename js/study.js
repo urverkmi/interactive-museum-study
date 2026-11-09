@@ -825,21 +825,15 @@
       }, S.session));
       save();
     }
-    const qUrl = CFG.questionnaireUrl.replace('{code}', encodeURIComponent(S.code));
     render(
       '<section class="screen"><div class="screen-body"><div class="end-inner">' +
         '<h1>' + E.title + '</h1>' +
         E.debriefParagraphs.map(p => '<p class="lede">' + p + '</p>').join('') +
-        '<a class="btn primary" id="q-link" href="' + esc(qUrl) + '" target="_blank" rel="noopener">' + E.questionnaireButton + ' ' + ARROW_R + '</a>' +
         '<div class="end-section"><h3>' + E.codeLabel + '</h3><div class="code-box">' + esc(S.code) + '</div><p class="small">' + E.codeHelp + '</p></div>' +
         '<div class="end-section"><h3>' + E.contactLabel + '</h3><p>' + CFG.contactEmails.map(e => '<a href="mailto:' + esc(e) + '">' + esc(e) + '</a>').join('<br>') + '</p></div>' +
         (MODE !== 'live' ? '<div class="end-section"><button class="btn" id="download">Download this session’s data (JSON)</button><p class="small">Shown in pilot and preview mode only.</p></div>' : '') +
       '</div></div></section>'
     );
-    document.getElementById('q-link').addEventListener('click', () => {
-      log('questionnaire_click');
-      send({ type: 'event', events: takeEvents() });
-    });
     const dl = document.getElementById('download');
     if (dl) dl.addEventListener('click', () => {
       const blob = new Blob([JSON.stringify({ code: S.code, sequence: S.sequence, trials: S.trials, results: S.results, session: S.session, sent: outbox }, null, 2)], { type: 'application/json' });

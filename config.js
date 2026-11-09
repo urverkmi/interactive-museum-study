@@ -14,16 +14,6 @@ window.STUDY_CONFIG = {
   // Bump this (e.g. to a new date) whenever participant-info.md changes.
   consentVersion: "2026-11-05",
 
-  // Link on the thank-you screen. "{code}" is replaced with the participant
-  // code, so questionnaire answers can be joined with the logged data.
-  // Google Forms: use "Get pre-filled link", type CODE in a short-answer
-  // question, and replace CODE in the URL with {code}.
-  // TODO: not set yet — "#" is a safe no-op so the button never leaks to a
-  // fake external domain. Replace before piloting, or remove the button
-  // from showEnd() in js/study.js if you decide you don't need it (the
-  // background/quiz/ending questions are already all collected in-app).
-  questionnaireUrl: "#TODO-add-questionnaire-url",
-
   contactEmails: ["michang@kth.se", "yuxz@kth.se"],
 
   // Latin square (plan, Table 3): which version each artwork is shown in.
@@ -45,8 +35,8 @@ window.STUDY_CONFIG = {
   presentationOrder: "random",
 
   // Version C: if true, the Next button stays locked (with a hint) until all
-  // three parts are opened. Off by default — participants can move on early.
-  requireAllRegions: false,
+  // three parts are opened.
+  requireAllRegions: true,
 
   // Below this window width the start screen asks for a computer.
   minViewportWidth: 1000,

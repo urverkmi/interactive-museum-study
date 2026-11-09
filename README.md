@@ -8,7 +8,7 @@ participant-info/      full participant-information page, rendered from content/
 sources/               sources & credits page, rendered from content/sources.md
 admin.html             researcher control panel: create links, see who has which sequence
 region-helper.html     draw the clickable regions for version C on your real images
-config.js              settings: backend URL, questionnaire link, consent version, Latin square, order
+config.js              settings: backend URL, consent version, Latin square, order
 content/content.js     participant-facing UI text, artwork metadata and quiz questions  ← replace placeholders here
 content/artworks/      one .md file per artwork: version A excerpt + the B/C segments (wording lives here, not in content.js)
 content/participant-info.md, content/sources.md   the two content pages above
@@ -81,7 +81,7 @@ Field names follow `docs/study-website-spec.md` §4 (BG1/BG2, M1–M5, R1, AC1, 
 
 Each row is written as soon as the artwork page is finished, updated once the quiz for that artwork is done, and updated again with `familiar` once the ending questions are answered. If someone drops out, the viewing data is kept.
 
-**Sessions**: `presentation` (e.g. `art3=A > art1=B > art2=C`), `start_ts`/`end_ts`/`completed`, total_ms (for the exclusion rule "under ⅓ of the median"), instructions_ms, `consent_ts` and `consent_version` (when consent was given, and which wording of `participant-info.md` it refers to — see `consentVersion` in config.js), whether the participant-information link was opened, reloads (resumed_count), screen size, browser language, whether the questionnaire link was clicked, the background questions (`bg1_english_first`, `bg2_reading_level` — the latter is stored as `"First language"` when BG1 = Yes), the attention check (`attention_answer`, `attention_pass` — AC1 is a participant-level exclusion field, not per-trial), and the remaining ending questions (`e2_artwork_id`, `e2_text`, `e3_text`, `interview_optin`).
+**Sessions**: `presentation` (e.g. `art3=A > art1=B > art2=C`), `start_ts`/`end_ts`/`completed`, total_ms (for the exclusion rule "under ⅓ of the median"), instructions_ms, `consent_ts` and `consent_version` (when consent was given, and which wording of `participant-info.md` it refers to — see `consentVersion` in config.js), whether the participant-information link was opened, reloads (resumed_count), screen size, browser language, the background questions (`bg1_english_first`, `bg2_reading_level` — the latter is stored as `"First language"` when BG1 = Yes), the attention check (`attention_answer`, `attention_pass` — AC1 is a participant-level exclusion field, not per-trial), and the remaining ending questions (`e2_artwork_id`, `e2_text`, `e3_text`, `interview_optin`).
 **Responses** (one row per participant × item — spec §4.3, the normalized complement to the bundled `quiz_answers` in Trials): `item_id` (M1–M5 or R1), `artwork_id`, `version`, `item_type` ("relation" / "detail" / "rating"), `options_shown` (the shuffled order the options were displayed in for that participant, `>`-joined, "Not sure" always last), `selected`, `correct`, `not_sure`, `rt_ms` (time from the quiz page opening to the first click on that item — a proxy for response time, not the time to the final answer if they changed their mind). R1 rows have no `correct`/`not_sure`.
 **Events**: a timestamped log of every click.
 **Interviews**: `participant_id`, `email` — only written if someone opted into the follow-up interview and left an address. Kept separate from the rest of the data, like *Assignments*.
@@ -94,6 +94,5 @@ Each row is written as soon as the artwork page is finished, updated once the qu
 - **Sources & credits**: edit `content/sources.md` (rendered at `/sources/`).
 - **Images**: put your files in `content/images/` and update `image` in content.js. Any size or format works.
 - **Regions**: open `region-helper.html`, drag on each image, and copy the `shape` into content.js. Do this again if you change an artwork's image — the current `shape` coordinates were set for the placeholder images and need to be redrawn against the real photos.
-- **Links**: set `questionnaireUrl` in config.js. Put `{code}` in the questionnaire URL so the participant code is filled in automatically. In Google Forms, use *Get pre-filled link*.
 
 Both `/participant-info/` and `/sources/` render their markdown file in the browser via [marked.js](https://github.com/markedjs/marked) (loaded from a CDN); nothing needs to be installed or built.
